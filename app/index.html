@@ -1,23 +1,124 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cover Snap</title>
-<link rel="stylesheet" href="./style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#14131a">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Viceprint — Cover Art Studio</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./src/main.js"></script>
 </head>
 <body>
-<main class="app">
-  <section class="controls">
-    <h1>Cover Snap</h1>
-    <p>A photo and a caption, made into a square cover.</p>
-    <label>Photo <input id="photo" type="file" accept="image/*"></label>
-    <label>Caption <input id="caption" type="text" maxlength="40" value="Sunset Heist"></label>
-    <button id="export" type="button">Export PNG 1080 x 1080</button>
-    <p id="status" role="status"></p>
-  </section>
-  <canvas id="cover" width="1080" height="1080" aria-label="The cover"></canvas>
-</main>
-<script type="module" src="./src/main.js"></script>
+  <header class="masthead">
+    <div class="identity">
+      <span class="brand-mark" aria-hidden="true"><b></b></span>
+      <div><div class="brand">VICE<span>PRINT</span></div><div class="brand-label">Cover art studio</div></div>
+    </div>
+    <div class="mast-actions">
+      <span class="local-note"><i></i> On-device editing</span>
+      <div class="history" aria-label="History">
+        <button class="icon-button" id="undo" title="Undo (Ctrl/⌘ + Z)" aria-label="Undo" disabled>↶</button>
+        <button class="icon-button" id="redo" title="Redo (Ctrl/⌘ + Shift + Z)" aria-label="Redo" disabled>↷</button>
+      </div>
+      <button class="button quiet" id="reset" type="button">Reset</button>
+      <button class="button primary" id="export" type="button"><span aria-hidden="true" class="download-icon">↓</span> Export PNG</button>
+    </div>
+  </header>
+  <main class="studio">
+    <aside class="rail library" aria-label="Cover setup">
+      <section class="rail-section media-section">
+        <div class="section-heading"><h2>Photos</h2></div>
+        <button class="drop-target" id="import" type="button"><span class="upload-icon" aria-hidden="true">+</span><span><strong>Add your photos</strong><small>Drop here or browse</small></span></button>
+        <input type="file" id="photo-files" accept="image/*" multiple hidden>
+        <input type="file" id="panel-file" accept="image/*" hidden>
+        <label class="select-row import-mode">Place photos
+          <select id="import-mode"><option value="all">Across the cover</option><option value="panel">In selected panel</option></select>
+        </label>
+      </section>
+
+      <section class="rail-section template-section">
+        <div class="section-heading"><h2>Templates</h2></div>
+        <div class="templates" id="templates"></div>
+        <label class="select-row sample-row" for="sample">Single-photo sample
+          <select id="sample"><option value="">Choose…</option><option value="boulevard">Ocean Drive</option><option value="pier">Sunset Pier</option></select>
+        </label>
+      </section>
+
+      <section class="rail-section">
+        <div class="section-heading"><h2>Panel layout</h2><span id="layout-name"></span></div>
+        <div class="layout-grid" id="layouts"></div>
+      </section>
+
+      <section class="rail-section grade-section">
+        <div class="section-heading"><h2>Color grade</h2></div>
+        <div id="grades" class="grades"></div>
+        <label class="select-row finish-row">Finish
+          <select id="finish"><option value="print">Screenprint</option><option value="comic">Graphic novel</option><option value="clean">Clean</option></select>
+        </label>
+      </section>
+    </aside>
+
+    <section class="workspace" aria-label="Canvas workspace">
+      <div class="workspace-bar">
+        <div class="work-label"><span class="live-dot"></span> Live canvas</div>
+        <div id="formats" class="segments" aria-label="Export size"></div>
+      </div>
+      <div class="stage" id="stage">
+        <div class="canvas-wrap" id="canvas-wrap">
+          <canvas id="cover" width="1080" height="1350" aria-label="Live cover artwork"></canvas>
+          <canvas id="selection" width="1080" height="1350" aria-hidden="true"></canvas>
+        </div>
+      </div>
+      <div class="workspace-footer">
+        <span id="dimensions" class="dimensions">1080 × 1350</span>
+        <span class="canvas-hint">Click a panel to select · Drag to reframe</span>
+        <button class="button quiet clear-focus" id="clear-focus" type="button" disabled>Hide guides</button>
+      </div>
+    </section>
+
+    <aside class="rail inspector" aria-label="Cover inspector">
+      <section class="rail-section panel-section">
+        <div class="section-heading"><h2>Panels</h2><span id="panel-count"></span></div>
+        <div id="panels" class="panel-grid" aria-label="Select a panel"></div>
+      </section>
+      <section class="rail-section inspector-section">
+        <div class="editor-tabs" aria-label="Inspector">
+          <button id="lettering-tab" type="button" aria-pressed="true">Lettering</button>
+          <button id="crop-tab" type="button" aria-pressed="false">Crop & tint</button>
+        </div>
+        <div id="lettering" class="editor-controls">
+          <label for="title">Main title</label>
+          <textarea id="title" rows="2" maxlength="90" placeholder="Cover title" spellcheck="false"></textarea>
+          <label for="subtitle">Script subtitle</label>
+          <input id="subtitle" maxlength="55" placeholder="Optional" type="text" spellcheck="false">
+          <label for="badge">Edition stamp</label>
+          <input id="badge" maxlength="30" placeholder="Optional" type="text" spellcheck="false">
+          <div class="split-fields">
+            <label>Typeface<select id="style"><option value="block">Block</option><option value="slant">Slanted</option><option value="wide">Wide</option></select></label>
+            <label>Ink palette<select id="ink"></select></label>
+          </div>
+          <label class="range-field" for="scale"><span>Lettering scale <output id="scale-value"></output></span><input id="scale" type="range" min="35" max="145" step="1"></label>
+          <div class="split-fields">
+            <label class="range-field" for="x"><span>Horizontal <output id="x-value"></output></span><input id="x" type="range" min="14" max="86" step="1"></label>
+            <label class="range-field" for="y"><span>Vertical <output id="y-value"></output></span><input id="y" type="range" min="17" max="83" step="1"></label>
+          </div>
+        </div>
+        <div id="crop" class="editor-controls" hidden>
+          <div class="crop-title"><strong id="current-panel"></strong><button class="button quiet" id="reframe" type="button">Reset crop</button></div>
+          <label>Photo<select id="panel-photo"></select></label>
+          <button class="button full-width" id="replace-photo" type="button">Replace photo…</button>
+          <label class="range-field" for="zoom"><span>Zoom <output id="zoom-value"></output></span><input type="range" id="zoom" min="1" max="3.5" step=".01"></label>
+          <label class="range-field" for="rotation"><span>Rotation <output id="rotation-value"></output></span><input type="range" id="rotation" min="-45" max="45" step="1"></label>
+          <label class="check-field"><input type="checkbox" id="flip"> Flip horizontally</label>
+          <label>Panel grade<select id="panel-grade"></select></label>
+          <label class="tint-field">Tint color<input type="color" id="tint" value="#ffffff"></label>
+          <label class="range-field" for="mix"><span>Tint strength <output id="mix-value"></output></span><input type="range" id="mix" min="0" max="100" step="1"></label>
+        </div>
+      </section>
+      <div id="status" class="status" role="status" aria-live="polite">Ready to export</div>
+    </aside>
+  </main>
 </body>
 </html>
